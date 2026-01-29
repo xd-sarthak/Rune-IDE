@@ -1,6 +1,9 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { firecrawl } from '@/lib/firecrawl';
+
+const URL_REGEX = /https?:\/\/[^\s]+/g;
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPEN_ROUTER_API_KEY
@@ -24,16 +27,41 @@ export const helloWorld = inngest.createFunction(
 export const demoGenerateGoogle = inngest.createFunction(
   { id: "demo-generate" },
   { event: "demo/generate" },
-  async ({  step }) => {
+  async ({event, step }) => {
+
+    const {prompt} = event.data as {prompt: string};
+    const urls = await step.run("extract-urls", async () => {
+      return prompt.match(URL_REGEX) ?? [];
+    }) as string[];
+
+    const scrapedContent = await step.run("scrape-urls", async () => {
+      //all urls are scraped in parallel
+      const results = await Promise.all(
+        urls.map(async (url) => {
+          const result = await firecrawl.scrape(
+            url,
+            { formats: ["markdown"] },
+          );
+          return result.markdown ?? null;
+        })
+      );
+      return results.filter(Boolean).join("\n\n");
+    });
+
+    const finalPrompt = scrapedContent
+    ? `Context:\n${scrapedContent}\n\nQuestion: ${prompt}`
+    : prompt;
+
     await step.run("generate-text", async () => {
       return await generateText({
         model: google('gemini-2.5-flash'),
-        prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+        prompt: finalPrompt,
       }); 
     });
   },
 );
 
+/*
 export const demoGenerateOpenRouter = inngest.createFunction(
   { id: "demo-generate-two" },
   { event: "demo/generate-two" },
@@ -45,3 +73,4 @@ export const demoGenerateOpenRouter = inngest.createFunction(
       });
     });  },
 );
+*/

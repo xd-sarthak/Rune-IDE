@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:next": "bun run dev",
+    "dev:inngest": "npx --ignore-scripts=false inngest-cli@latest dev",
+    "dev:all": "concurrently --names \"NEXT,INNGEST\" --prefix-colors \"blue,green\" \"bun run dev\" \"npx --ignore-scripts=false inngest-cli@latest dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -13,6 +16,7 @@
     "@clerk/nextjs": "^6.36.7",
     "@clerk/themes": "^2.4.47",
     "@hookform/resolvers": "^5.2.2",
+    "@mendable/firecrawl-js": "^4.11.5",
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -68,6 +72,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.2",
     "tailwindcss": "^4",
